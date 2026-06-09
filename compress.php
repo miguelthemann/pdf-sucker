@@ -33,6 +33,16 @@ if (count($ids) > $maxBatchIds) {
     appJsonResponse(['ok' => false, 'error' => 'Demasiados ficheiros num único pedido.'], 400);
 }
 
+// Maiores primeiro — independentemente da ordem do pedido
+usort($ids, static function ($a, $b): int {
+    if (!is_string($a) || !is_string($b)) {
+        return 0;
+    }
+    $sizeA = (int) ($_SESSION['files'][$a]['original_size'] ?? 0);
+    $sizeB = (int) ($_SESSION['files'][$b]['original_size'] ?? 0);
+    return $sizeB <=> $sizeA;
+});
+
 [$gsBin, $gsOk] = resolveGhostscriptBinary((string) ($config['ghostscript_bin'] ?? 'gs'));
 if (!$gsOk) {
     appJsonResponse([
@@ -52,7 +62,7 @@ if ($rpOutDir === false || $rpTempDir === false) {
 }
 
 $results = [];
-$maxParallel = (int) ($config['max_parallel_compression'] ?? 4);
+$maxParallel = (int) ($config['max_parallel_compression'] ?? 100);
 
 /**
  * Processa um ficheiro individual para compressão

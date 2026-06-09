@@ -24,8 +24,8 @@ return [
     /** Máximo de ficheiros num único upload */
     'max_files_per_upload' => 1000,
 
-    /** Máximo de compressões paralelas (melhora desempenho com vários PDFs) */
-    'max_parallel_compression' => 4,
+    /** Máximo de compressões paralelas (processos Ghostscript em simultâneo) */
+    'max_parallel_compression' => 100,
 
     /**
      * Ficheiros apagados automaticamente após este tempo (minutos)
