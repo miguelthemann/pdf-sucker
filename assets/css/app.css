@@ -533,6 +533,33 @@ body {
     padding: 0.5rem 0 0;
 }
 
+.foot-links {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1.5rem;
+    margin-top: 1rem;
+    flex-wrap: wrap;
+}
+
+.foot-btn {
+    display: inline-flex;
+    text-decoration: none;
+    font-size: 0.85rem;
+    padding: 0.45rem 1rem;
+}
+
+.foot-link {
+    color: var(--muted);
+    font-size: 0.85rem;
+    text-decoration: none;
+    transition: color 0.12s ease;
+}
+
+.foot-link:hover {
+    color: var(--text);
+}
+
 .sr-only {
     position: absolute;
     width: 1px;

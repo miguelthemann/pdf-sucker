@@ -5,7 +5,12 @@ import { uploadPdfs, compressPdfs, deleteServerFiles, downloadZip } from './api.
 
 /** @typedef {{ localId: string, serverId: string|null, name: string, originalSize: number, compressedSize: number|null, reduction: number|null, status: string, error: string|null }} FileItem */
 
-const cfg = window.__APP__ || { gsOk: true, maxFileBytes: 50 * 1024 * 1024, maxFiles: 20 };
+const cfg = window.__APP__ || {
+    gsOk: true,
+    maxFileBytes: 50 * 1024 * 1024,
+    maxFiles: 20,
+    maxParallelCompression: 4,
+};
 
 /** @type {FileItem[]} */
 const items = [];
@@ -168,23 +173,6 @@ function selectedQuality() {
     return 'medium';
 }
 
-let fakeTimer = 0;
-
-function startFakeProgress() {
-    let v = 5;
-    clearInterval(fakeTimer);
-    fakeTimer = window.setInterval(() => {
-        v += Math.random() * 12;
-        if (v > 92) v = 92;
-        setProgress(true, 'A comprimir no servidor…', Math.floor(v));
-    }, 400);
-}
-
-function stopFakeProgress() {
-    clearInterval(fakeTimer);
-    fakeTimer = 0;
-}
-
 /**
  * @param {File[]} fileArr
  */
@@ -279,58 +267,89 @@ async function handleIncomingFiles(fileArr) {
     }
 }
 
+/**
+ * @param {FileItem} item
+ * @param {{ ok?: boolean, compressed_size?: number, reduction_percent?: number, error?: string }|undefined} result
+ */
+function applyCompressResult(item, result) {
+    if (result && result.ok) {
+        item.status = 'done';
+        item.compressedSize = result.compressed_size ?? null;
+        item.reduction = result.reduction_percent ?? null;
+        item.error = null;
+    } else {
+        item.status = 'error';
+        item.compressedSize = null;
+        item.reduction = null;
+        item.error =
+            result && typeof result.error === 'string' && result.error
+                ? result.error
+                : 'Falha na compressão.';
+    }
+    refreshRow(item.localId);
+}
+
+/**
+ * Comprime PDFs: até 4 em paralelo quando há mais de 4 ficheiros;
+ * com 4 ou menos, um de cada vez.
+ * @param {FileItem[]} targets
+ */
+async function compressFilesInParallel(targets) {
+    const level = selectedQuality();
+    const maxParallel = Math.max(1, cfg.maxParallelCompression ?? 4);
+    const queue = targets.filter((i) => i.serverId);
+    if (queue.length === 0) return;
+
+    let completed = 0;
+    const total = queue.length;
+
+    async function worker() {
+        while (queue.length > 0) {
+            const item = queue.shift();
+            if (!item || !item.serverId) continue;
+
+            item.status = 'compressing';
+            item.error = null;
+            refreshRow(item.localId);
+
+            try {
+                const data = await compressPdfs([item.serverId], level);
+                const result = (data.results || []).find((r) => r.id === item.serverId) ?? data.results?.[0];
+                applyCompressResult(item, result);
+            } catch (e) {
+                item.status = 'error';
+                item.error = e instanceof Error ? e.message : 'Erro desconhecido.';
+                refreshRow(item.localId);
+            }
+
+            completed += 1;
+            const pct = Math.min(99, Math.floor((completed / total) * 100));
+            setProgress(true, `A comprimir (${completed}/${total})…`, pct);
+        }
+    }
+
+    const workers = total > maxParallel ? maxParallel : 1;
+    await Promise.all(Array.from({ length: workers }, () => worker()));
+}
+
 async function runCompress() {
     const targets = items.filter(
         (i) => i.serverId && (i.status === 'ready' || i.status === 'error' || i.status === 'done')
     );
-    const ids = targets.map((i) => /** @type {string} */ (i.serverId));
-    if (ids.length === 0) {
+    if (targets.length === 0) {
         alert('Não há PDFs prontos a comprimir na lista.');
         return;
     }
 
     el.dlAll.disabled = true;
     setProgress(true, 'A comprimir no servidor…', 8);
-    startFakeProgress();
-
-    for (const it of targets) {
-        it.status = 'compressing';
-        it.error = null;
-        refreshRow(it.localId);
-    }
 
     try {
-        const data = await compressPdfs(ids, selectedQuality());
-        stopFakeProgress();
-        const byId = new Map((data.results || []).map((r) => [r.id, r]));
-        for (const it of targets) {
-            const r = byId.get(it.serverId);
-            if (r && r.ok) {
-                it.status = 'done';
-                it.compressedSize = r.compressed_size ?? null;
-                it.reduction = r.reduction_percent ?? null;
-                it.error = null;
-            } else {
-                it.status = 'error';
-                it.compressedSize = null;
-                it.reduction = null;
-                it.error =
-                    r && typeof r.error === 'string' && r.error
-                        ? r.error
-                        : 'Falha na compressão.';
-            }
-            refreshRow(it.localId);
-        }
+        await compressFilesInParallel(targets);
         setProgress(true, 'Compressão concluída.', 100);
         setTimeout(() => setProgress(false, '', 0), 700);
     } catch (e) {
-        stopFakeProgress();
         setProgress(false, '', 0);
-        for (const it of targets) {
-            it.status = 'error';
-            it.error = e instanceof Error ? e.message : 'Erro desconhecido.';
-            refreshRow(it.localId);
-        }
         alert(e instanceof Error ? e.message : 'Erro desconhecido.');
     } finally {
         syncEmpty();
@@ -342,50 +361,23 @@ async function runCompress() {
  * @param {FileItem[]} targets
  */
 async function autoCompressFiles(targets) {
-    const ids = targets.map((i) => /** @type {string} */ (i.serverId));
-    if (ids.length === 0) return;
+    if (targets.length === 0) return;
 
     el.dlAll.disabled = true;
     setProgress(true, 'A comprimir no servidor…', 8);
-    startFakeProgress();
-
-    for (const it of targets) {
-        it.status = 'compressing';
-        it.error = null;
-        refreshRow(it.localId);
-    }
 
     try {
-        const data = await compressPdfs(ids, selectedQuality());
-        stopFakeProgress();
-        const byId = new Map((data.results || []).map((r) => [r.id, r]));
-        for (const it of targets) {
-            const r = byId.get(it.serverId);
-            if (r && r.ok) {
-                it.status = 'done';
-                it.compressedSize = r.compressed_size ?? null;
-                it.reduction = r.reduction_percent ?? null;
-                it.error = null;
-            } else {
-                it.status = 'error';
-                it.compressedSize = null;
-                it.reduction = null;
-                it.error =
-                    r && typeof r.error === 'string' && r.error
-                        ? r.error
-                        : 'Falha na compressão.';
-            }
-            refreshRow(it.localId);
-        }
+        await compressFilesInParallel(targets);
         setProgress(true, 'Compressão concluída.', 100);
         setTimeout(() => setProgress(false, '', 0), 700);
     } catch (e) {
-        stopFakeProgress();
         setProgress(false, '', 0);
         for (const it of targets) {
-            it.status = 'error';
-            it.error = e instanceof Error ? e.message : 'Erro desconhecido.';
-            refreshRow(it.localId);
+            if (it.status === 'compressing') {
+                it.status = 'error';
+                it.error = e instanceof Error ? e.message : 'Erro desconhecido.';
+                refreshRow(it.localId);
+            }
         }
     } finally {
         syncEmpty();
