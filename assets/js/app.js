@@ -9,7 +9,7 @@ const cfg = window.__APP__ || {
     gsOk: true,
     maxFileBytes: 50 * 1024 * 1024,
     maxFiles: 20,
-    maxParallelCompression: 4,
+    maxParallelCompression: 100,
 };
 
 /** @type {FileItem[]} */
@@ -250,10 +250,7 @@ async function handleIncomingFiles(fileArr) {
         }
         renderList();
         
-        // Iniciar compressão automática após upload bem-sucedido
         if (successfulUploads.length > 0) {
-            setProgress(true, 'Envio concluído. A comprimir…', 100);
-            await new Promise(resolve => setTimeout(resolve, 500));
             await autoCompressFiles(successfulUploads);
         } else {
             setProgress(true, 'Envio concluído.', 100);
@@ -290,46 +287,60 @@ function applyCompressResult(item, result) {
 }
 
 /**
- * Comprime PDFs: até 4 em paralelo quando há mais de 4 ficheiros;
- * com 4 ou menos, um de cada vez.
+ * @param {number} completed
+ * @param {number} total
+ */
+function compressionProgressLabel(completed, total) {
+    return `${completed} ficheiros de ${total} comprimidos`;
+}
+
+/**
+ * Comprime PDFs em ondas paralelas (até maxParallelCompression por onda).
+ * Maiores primeiro, independentemente da ordem de upload.
  * @param {FileItem[]} targets
  */
 async function compressFilesInParallel(targets) {
     const level = selectedQuality();
-    const maxParallel = Math.max(1, cfg.maxParallelCompression ?? 4);
-    const queue = targets.filter((i) => i.serverId);
-    if (queue.length === 0) return;
+    const maxParallel = Math.max(1, cfg.maxParallelCompression ?? 100);
+    const sorted = targets
+        .filter((i) => i.serverId)
+        .sort((a, b) => b.originalSize - a.originalSize);
+
+    const total = sorted.length;
+    if (total === 0) return;
 
     let completed = 0;
-    const total = queue.length;
+    setProgress(true, compressionProgressLabel(0, total), 0);
 
-    async function worker() {
-        while (queue.length > 0) {
-            const item = queue.shift();
-            if (!item || !item.serverId) continue;
+    for (let offset = 0; offset < total; offset += maxParallel) {
+        const wave = sorted.slice(offset, offset + maxParallel);
 
+        for (const item of wave) {
             item.status = 'compressing';
             item.error = null;
             refreshRow(item.localId);
+        }
 
-            try {
-                const data = await compressPdfs([item.serverId], level);
-                const result = (data.results || []).find((r) => r.id === item.serverId) ?? data.results?.[0];
-                applyCompressResult(item, result);
-            } catch (e) {
+        try {
+            const ids = wave.map((i) => /** @type {string} */ (i.serverId));
+            const data = await compressPdfs(ids, level);
+            const byId = new Map((data.results || []).map((r) => [r.id, r]));
+            for (const item of wave) {
+                applyCompressResult(item, byId.get(item.serverId));
+            }
+        } catch (e) {
+            const msg = e instanceof Error ? e.message : 'Erro desconhecido.';
+            for (const item of wave) {
                 item.status = 'error';
-                item.error = e instanceof Error ? e.message : 'Erro desconhecido.';
+                item.error = msg;
                 refreshRow(item.localId);
             }
-
-            completed += 1;
-            const pct = Math.min(99, Math.floor((completed / total) * 100));
-            setProgress(true, `A comprimir (${completed}/${total})…`, pct);
         }
-    }
 
-    const workers = total > maxParallel ? maxParallel : 1;
-    await Promise.all(Array.from({ length: workers }, () => worker()));
+        completed += wave.length;
+        const pct = Math.floor((completed / total) * 100);
+        setProgress(true, compressionProgressLabel(completed, total), pct);
+    }
 }
 
 async function runCompress() {
@@ -342,11 +353,11 @@ async function runCompress() {
     }
 
     el.dlAll.disabled = true;
-    setProgress(true, 'A comprimir no servidor…', 8);
 
     try {
         await compressFilesInParallel(targets);
-        setProgress(true, 'Compressão concluída.', 100);
+        const total = targets.filter((i) => i.serverId).length;
+        setProgress(true, compressionProgressLabel(total, total), 100);
         setTimeout(() => setProgress(false, '', 0), 700);
     } catch (e) {
         setProgress(false, '', 0);
@@ -364,11 +375,11 @@ async function autoCompressFiles(targets) {
     if (targets.length === 0) return;
 
     el.dlAll.disabled = true;
-    setProgress(true, 'A comprimir no servidor…', 8);
 
     try {
         await compressFilesInParallel(targets);
-        setProgress(true, 'Compressão concluída.', 100);
+        const total = targets.filter((i) => i.serverId).length;
+        setProgress(true, compressionProgressLabel(total, total), 100);
         setTimeout(() => setProgress(false, '', 0), 700);
     } catch (e) {
         setProgress(false, '', 0);

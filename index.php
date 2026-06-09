@@ -150,7 +150,7 @@ $maxFiles = (int) ($config['max_files_per_upload'] ?? 20);
             gsOk: <?php echo $gsOk ? 'true' : 'false'; ?>,
             maxFileBytes: <?php echo (int) $config['max_file_bytes']; ?>,
             maxFiles: <?php echo (int) $maxFiles; ?>,
-            maxParallelCompression: <?php echo (int) ($config['max_parallel_compression'] ?? 4); ?>
+            maxParallelCompression: <?php echo (int) ($config['max_parallel_compression'] ?? 100); ?>
         };
     </script>
     <script type="module" src="assets/js/app.js?v=1"></script>
