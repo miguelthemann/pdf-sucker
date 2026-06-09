@@ -119,7 +119,8 @@ $maxFiles = (int) ($config['max_files_per_upload'] ?? 20);
             <p>Os ficheiros são temporários: são eliminados após descarga ou após <?php echo (int) $ttl; ?> minutos. Os ficheiros e o histórico de uploads não são guardados.</p>
             <div class="foot-links">
                 <a href="https://status.entr0py.cc" class="btn btn-ghost foot-btn" target="_blank" rel="noopener noreferrer">Status</a>
-                <a href="https://github.com/miguelthemann/pdf-sucker" class="foot-link" target="_blank" rel="noopener noreferrer">GitHub</a>
+                <span class="foot-sep" aria-hidden="true"></span>
+                <a href="https://github.com/miguelthemann/pdf-sucker" class="btn btn-ghost foot-btn" target="_blank" rel="noopener noreferrer">GitHub</a>
             </div>
         </footer>
     </main>
