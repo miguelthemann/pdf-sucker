@@ -117,6 +117,9 @@ $maxFiles = (int) ($config['max_files_per_upload'] ?? 20);
 
         <footer class="foot-note">
             <p>Os ficheiros são temporários: são eliminados após descarga ou após <?php echo (int) $ttl; ?> minutos. Os ficheiros e o histórico de uploads não são guardados.</p>
+            <div class="foot-links">
+                <a href="https://github.com/miguelthemann/pdf-sucker/tree/scpdpi" class="foot-link" target="_blank" rel="noopener noreferrer">GitHub</a>
+            </div>
         </footer>
     </main>
 
@@ -144,7 +147,8 @@ $maxFiles = (int) ($config['max_files_per_upload'] ?? 20);
         window.__APP__ = {
             gsOk: <?php echo $gsOk ? 'true' : 'false'; ?>,
             maxFileBytes: <?php echo (int) $config['max_file_bytes']; ?>,
-            maxFiles: <?php echo (int) $maxFiles; ?>
+            maxFiles: <?php echo (int) $maxFiles; ?>,
+            maxParallelCompression: <?php echo (int) ($config['max_parallel_compression'] ?? 4); ?>
         };
     </script>
     <script type="module" src="assets/js/app.js?v=1"></script>
