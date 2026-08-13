@@ -9,7 +9,7 @@ const cfg = window.__APP__ || {
     gsOk: true,
     maxFileBytes: 50 * 1024 * 1024,
     maxFiles: 20,
-    maxParallelCompression: 100,
+    maxParallelCompression: 4,
 };
 
 /** @type {FileItem[]} */
@@ -295,52 +295,51 @@ function compressionProgressLabel(completed, total) {
 }
 
 /**
- * Comprime PDFs em ondas paralelas (até maxParallelCompression por onda).
- * Maiores primeiro, independentemente da ordem de upload.
+ * Comprime PDFs com pool de workers (até maxParallelCompression em simultâneo).
+ * Progresso atualizado após cada PDF. Maiores primeiro.
  * @param {FileItem[]} targets
  */
 async function compressFilesInParallel(targets) {
     const level = selectedQuality();
-    const maxParallel = Math.max(1, cfg.maxParallelCompression ?? 100);
-    const sorted = targets
+    const maxParallel = Math.max(1, cfg.maxParallelCompression ?? 4);
+    const queue = targets
         .filter((i) => i.serverId)
         .sort((a, b) => b.originalSize - a.originalSize);
 
-    const total = sorted.length;
+    const total = queue.length;
     if (total === 0) return;
 
     let completed = 0;
     setProgress(true, compressionProgressLabel(0, total), 0);
 
-    for (let offset = 0; offset < total; offset += maxParallel) {
-        const wave = sorted.slice(offset, offset + maxParallel);
+    async function worker() {
+        while (queue.length > 0) {
+            const item = queue.shift();
+            if (!item || !item.serverId) continue;
 
-        for (const item of wave) {
             item.status = 'compressing';
             item.error = null;
             refreshRow(item.localId);
-        }
 
-        try {
-            const ids = wave.map((i) => /** @type {string} */ (i.serverId));
-            const data = await compressPdfs(ids, level);
-            const byId = new Map((data.results || []).map((r) => [r.id, r]));
-            for (const item of wave) {
-                applyCompressResult(item, byId.get(item.serverId));
-            }
-        } catch (e) {
-            const msg = e instanceof Error ? e.message : 'Erro desconhecido.';
-            for (const item of wave) {
+            try {
+                const data = await compressPdfs([item.serverId], level);
+                const result =
+                    (data.results || []).find((r) => r.id === item.serverId) ?? data.results?.[0];
+                applyCompressResult(item, result);
+            } catch (e) {
                 item.status = 'error';
-                item.error = msg;
+                item.error = e instanceof Error ? e.message : 'Erro desconhecido.';
                 refreshRow(item.localId);
             }
-        }
 
-        completed += wave.length;
-        const pct = Math.floor((completed / total) * 100);
-        setProgress(true, compressionProgressLabel(completed, total), pct);
+            completed += 1;
+            const pct = Math.floor((completed / total) * 100);
+            setProgress(true, compressionProgressLabel(completed, total), pct);
+        }
     }
+
+    const workers = Math.min(maxParallel, total);
+    await Promise.all(Array.from({ length: workers }, () => worker()));
 }
 
 async function runCompress() {

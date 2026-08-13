@@ -62,7 +62,7 @@ if ($rpOutDir === false || $rpTempDir === false) {
 }
 
 $results = [];
-$maxParallel = (int) ($config['max_parallel_compression'] ?? 100);
+$maxParallel = (int) ($config['max_parallel_compression'] ?? 4);
 
 /**
  * Processa um ficheiro individual para compressão

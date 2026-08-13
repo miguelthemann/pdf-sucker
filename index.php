@@ -19,12 +19,16 @@ $maxFiles = (int) ($config['max_files_per_upload'] ?? 20);
     <meta name="robots" content="index, follow">
     <title>PDF Sucker</title>
     <link rel="icon" href="favicon.png" type="image/png">
-    <link rel="stylesheet" href="assets/css/app.css?v=1">
+    <link rel="stylesheet" href="assets/css/app.css?v=2">
 </head>
 <body>
     <div class="bg-grid" aria-hidden="true"></div>
     <div class="glow glow-a" aria-hidden="true"></div>
     <div class="glow glow-b" aria-hidden="true"></div>
+
+    <a href="https://scpdpi.com/" class="scpdpi-bg" target="_blank" rel="noopener noreferrer" aria-label="scpdpi.com">
+        <img src="scpdpi.png" alt="" width="200" height="40" decoding="async">
+    </a>
 
     <header class="site-header">
         <div class="brand">
@@ -118,7 +122,9 @@ $maxFiles = (int) ($config['max_files_per_upload'] ?? 20);
         <footer class="foot-note">
             <p>Os ficheiros são temporários: são eliminados após descarga ou após <?php echo (int) $ttl; ?> minutos. Os ficheiros e o histórico de uploads não são guardados.</p>
             <div class="foot-links">
-                <a href="https://github.com/miguelthemann/pdf-sucker/tree/scpdpi" class="foot-link" target="_blank" rel="noopener noreferrer">GitHub</a>
+                <a href="mailto:support@entr0py.cc" class="btn btn-ghost foot-btn">Contacto</a>
+                <span class="foot-sep" aria-hidden="true"></span>
+                <a href="https://github.com/miguelthemann/pdf-sucker/tree/scpdpi" class="btn btn-ghost foot-btn" target="_blank" rel="noopener noreferrer">GitHub</a>
             </div>
         </footer>
     </main>
@@ -148,7 +154,7 @@ $maxFiles = (int) ($config['max_files_per_upload'] ?? 20);
             gsOk: <?php echo $gsOk ? 'true' : 'false'; ?>,
             maxFileBytes: <?php echo (int) $config['max_file_bytes']; ?>,
             maxFiles: <?php echo (int) $maxFiles; ?>,
-            maxParallelCompression: <?php echo (int) ($config['max_parallel_compression'] ?? 100); ?>
+            maxParallelCompression: <?php echo (int) ($config['max_parallel_compression'] ?? 4); ?>
         };
     </script>
     <script type="module" src="assets/js/app.js?v=1"></script>
