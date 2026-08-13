@@ -2,6 +2,7 @@
 
 import { formatBytes, randomId, fileLooksLikePdf } from './util.js';
 import { uploadPdfs, compressPdfs, deleteServerFiles, downloadZip } from './api.js';
+import { initI18n, t, onLangChange, localeTag } from './i18n.js';
 
 /** @typedef {{ localId: string, serverId: string|null, name: string, originalSize: number, compressedSize: number|null, reduction: number|null, status: string, error: string|null }} FileItem */
 
@@ -49,15 +50,15 @@ async function downloadSingle(item) {
             { credentials: 'same-origin' }
         );
         if (!res.ok) {
-            const t = await res.text();
-            throw new Error(t.trim() || 'Não foi possível descarregar.');
+            const body = await res.text();
+            throw new Error(body.trim() || t('downloadFailed'));
         }
         const blob = await res.blob();
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
         const base = item.name.replace(/\.pdf$/i, '');
-        a.download = `${base}_comprimido.pdf`;
+        a.download = `${base}${t('suffixCompressed')}`;
         a.click();
         URL.revokeObjectURL(url);
 
@@ -67,7 +68,7 @@ async function downloadSingle(item) {
         }
         renderList();
     } catch (e) {
-        alert(e instanceof Error ? e.message : 'Erro ao descarregar.');
+        alert(e instanceof Error ? e.message : t('downloadError'));
     }
 }
 
@@ -93,17 +94,17 @@ function rowFor(item) {
             const c = formatBytes(item.compressedSize);
             const r =
                 item.reduction != null
-                    ? ` · ${item.reduction >= 0 ? '−' : '+'}${Math.abs(item.reduction).toLocaleString('pt-PT', { maximumFractionDigits: 1 })} %`
+                    ? ` · ${item.reduction >= 0 ? '−' : '+'}${Math.abs(item.reduction).toLocaleString(localeTag(), { maximumFractionDigits: 1 })} %`
                     : '';
-            metaEl.textContent = `Original: ${o} · Comprimido: ${c}${r}`;
+            metaEl.textContent = `${t('metaOriginal')}: ${o} · ${t('metaCompressed')}: ${c}${r}`;
         } else if (item.status === 'error' && item.error) {
             metaEl.textContent = item.error;
         } else if (item.status === 'ready' && item.serverId) {
-            metaEl.textContent = `Original: ${o} · Pronto a comprimir`;
+            metaEl.textContent = `${t('metaOriginal')}: ${o} · ${t('metaReady')}`;
         } else if (item.status === 'compressing') {
-            metaEl.textContent = `Original: ${o} · A comprimir…`;
+            metaEl.textContent = `${t('metaOriginal')}: ${o} · ${t('metaCompressing')}`;
         } else {
-            metaEl.textContent = `Original: ${o}`;
+            metaEl.textContent = `${t('metaOriginal')}: ${o}`;
         }
     }
 
@@ -115,6 +116,8 @@ function rowFor(item) {
 
     btnRm.addEventListener('click', () => removeItem(item.localId));
     btnDl.addEventListener('click', () => void downloadSingle(item));
+    btnDl.setAttribute('title', t('download'));
+    btnRm.setAttribute('title', t('removeFromList'));
 
     applyState();
     node.update = () => applyState();
@@ -179,20 +182,20 @@ function selectedQuality() {
 async function handleIncomingFiles(fileArr) {
     const pdfs = fileArr.filter((f) => f.type === 'application/pdf' || /\.pdf$/i.test(f.name));
     if (pdfs.length === 0) {
-        alert('Só são aceites ficheiros PDF.');
+        alert(t('onlyPdf'));
         return;
     }
 
     const valid = [];
     for (const f of pdfs) {
         if (f.size > cfg.maxFileBytes) {
-            alert(`O ficheiro «${f.name}» excede o limite de tamanho.`);
+            alert(t('fileTooLarge', { name: f.name }));
             continue;
         }
         /* eslint-disable no-await-in-loop */
         const okMagic = await fileLooksLikePdf(f);
         if (!okMagic) {
-            alert(`O ficheiro «${f.name}» não parece ser um PDF válido.`);
+            alert(t('invalidPdf', { name: f.name }));
             continue;
         }
         valid.push(f);
@@ -202,19 +205,19 @@ async function handleIncomingFiles(fileArr) {
 
     const room = cfg.maxFiles - items.length;
     if (room <= 0) {
-        alert('Atingiu o número máximo de ficheiros na lista.');
+        alert(t('maxFilesReached'));
         return;
     }
     const batch = valid.slice(0, room);
     if (valid.length > room) {
-        alert(`Só pode adicionar mais ${room} ficheiro(s). O restante foi ignorado.`);
+        alert(t('roomLeft', { n: room }));
     }
 
-    setProgress(true, 'A enviar ficheiros…', 0);
+    setProgress(true, t('uploading'), 0);
 
     try {
         const res = await uploadPdfs(batch, (pct) => {
-            setProgress(true, 'A enviar ficheiros…', pct);
+            setProgress(true, t('uploading'), pct);
         });
 
         let i = 0;
@@ -244,7 +247,7 @@ async function handleIncomingFiles(fileArr) {
                     compressedSize: null,
                     reduction: null,
                     status: 'error',
-                    error: part.error || 'Erro no envio.',
+                    error: part.error || t('uploadError'),
                 });
             }
         }
@@ -253,12 +256,12 @@ async function handleIncomingFiles(fileArr) {
         if (successfulUploads.length > 0) {
             await autoCompressFiles(successfulUploads);
         } else {
-            setProgress(true, 'Envio concluído.', 100);
+            setProgress(true, t('uploadDone'), 100);
             setTimeout(() => setProgress(false, '', 0), 700);
         }
     } catch (e) {
         setProgress(false, '', 0);
-        alert(e instanceof Error ? e.message : 'Erro desconhecido.');
+        alert(e instanceof Error ? e.message : t('unknownError'));
     } finally {
         syncEmpty();
     }
@@ -281,7 +284,7 @@ function applyCompressResult(item, result) {
         item.error =
             result && typeof result.error === 'string' && result.error
                 ? result.error
-                : 'Falha na compressão.';
+                : t('compressFailed');
     }
     refreshRow(item.localId);
 }
@@ -291,7 +294,7 @@ function applyCompressResult(item, result) {
  * @param {number} total
  */
 function compressionProgressLabel(completed, total) {
-    return `${completed} ficheiros de ${total} comprimidos`;
+    return t('compressionProgress', { completed, total });
 }
 
 /**
@@ -328,7 +331,7 @@ async function compressFilesInParallel(targets) {
                 applyCompressResult(item, result);
             } catch (e) {
                 item.status = 'error';
-                item.error = e instanceof Error ? e.message : 'Erro desconhecido.';
+                item.error = e instanceof Error ? e.message : t('unknownError');
                 refreshRow(item.localId);
             }
 
@@ -347,7 +350,7 @@ async function runCompress() {
         (i) => i.serverId && (i.status === 'ready' || i.status === 'error' || i.status === 'done')
     );
     if (targets.length === 0) {
-        alert('Não há PDFs prontos a comprimir na lista.');
+        alert(t('noPdfsToCompress'));
         return;
     }
 
@@ -360,7 +363,7 @@ async function runCompress() {
         setTimeout(() => setProgress(false, '', 0), 700);
     } catch (e) {
         setProgress(false, '', 0);
-        alert(e instanceof Error ? e.message : 'Erro desconhecido.');
+        alert(e instanceof Error ? e.message : t('unknownError'));
     } finally {
         syncEmpty();
     }
@@ -385,7 +388,7 @@ async function autoCompressFiles(targets) {
         for (const it of targets) {
             if (it.status === 'compressing') {
                 it.status = 'error';
-                it.error = e instanceof Error ? e.message : 'Erro desconhecido.';
+                it.error = e instanceof Error ? e.message : t('unknownError');
                 refreshRow(it.localId);
             }
         }
@@ -398,13 +401,13 @@ async function runDownloadAll() {
     const ids = items.filter((i) => i.status === 'done' && i.serverId).map((i) => /** @type {string} */ (i.serverId));
     if (ids.length === 0) return;
     el.dlAll.disabled = true;
-    setProgress(true, 'A preparar arquivo…', 20);
+    setProgress(true, t('preparingArchive'), 20);
     try {
         const blob = await downloadZip(ids);
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = 'pdfs_comprimidos.zip';
+        a.download = t('zipName');
         a.click();
         URL.revokeObjectURL(url);
 
@@ -417,7 +420,7 @@ async function runDownloadAll() {
         }
         renderList();
     } catch (e) {
-        alert(e instanceof Error ? e.message : 'Erro ao descarregar.');
+        alert(e instanceof Error ? e.message : t('downloadError'));
     } finally {
         setProgress(false, '', 0);
         syncEmpty();
@@ -463,5 +466,8 @@ el.drop.addEventListener('drop', (e) => {
 });
 
 el.dlAll.addEventListener('click', () => void runDownloadAll());
+
+initI18n(cfg);
+onLangChange(() => renderList());
 
 syncEmpty();

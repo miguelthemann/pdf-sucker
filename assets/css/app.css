@@ -73,6 +73,43 @@ body {
     background: var(--accent2);
 }
 
+.lang-switch {
+    position: fixed;
+    top: 1.25rem;
+    right: 1.25rem;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+}
+
+.lang-opt {
+    background: none;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    font: inherit;
+    padding: 0.15rem 0.2rem;
+    transition: color 0.12s ease;
+}
+
+.lang-opt.is-active {
+    color: var(--text);
+}
+
+.lang-opt:hover:not(.is-active) {
+    color: var(--text);
+}
+
+.lang-sep {
+    color: var(--muted);
+    opacity: 0.45;
+    user-select: none;
+}
+
 .site-header {
     position: relative;
     z-index: 1;
