@@ -25,7 +25,7 @@ return [
     'max_files_per_upload' => 1000,
 
     /** Máximo de compressões paralelas (processos Ghostscript em simultâneo) */
-    'max_parallel_compression' => 100,
+    'max_parallel_compression' => 4,
 
     /**
      * Ficheiros apagados automaticamente após este tempo (minutos)

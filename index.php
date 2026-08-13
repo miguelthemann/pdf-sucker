@@ -118,6 +118,8 @@ $maxFiles = (int) ($config['max_files_per_upload'] ?? 20);
         <footer class="foot-note">
             <p>Os ficheiros são temporários: são eliminados após descarga ou após <?php echo (int) $ttl; ?> minutos. Os ficheiros e o histórico de uploads não são guardados.</p>
             <div class="foot-links">
+                <a href="mailto:support@entr0py.cc" class="btn btn-ghost foot-btn">Contacto</a>
+                <span class="foot-sep" aria-hidden="true"></span>
                 <a href="https://status.entr0py.cc" class="btn btn-ghost foot-btn" target="_blank" rel="noopener noreferrer">Status</a>
                 <span class="foot-sep" aria-hidden="true"></span>
                 <a href="https://github.com/miguelthemann/pdf-sucker" class="btn btn-ghost foot-btn" target="_blank" rel="noopener noreferrer">GitHub</a>
@@ -150,7 +152,7 @@ $maxFiles = (int) ($config['max_files_per_upload'] ?? 20);
             gsOk: <?php echo $gsOk ? 'true' : 'false'; ?>,
             maxFileBytes: <?php echo (int) $config['max_file_bytes']; ?>,
             maxFiles: <?php echo (int) $maxFiles; ?>,
-            maxParallelCompression: <?php echo (int) ($config['max_parallel_compression'] ?? 100); ?>
+            maxParallelCompression: <?php echo (int) ($config['max_parallel_compression'] ?? 4); ?>
         };
     </script>
     <script type="module" src="assets/js/app.js?v=1"></script>
