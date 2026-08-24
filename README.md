@@ -27,6 +27,7 @@ Esta é a branch **`scpdpi`**, uma variante personalizada do [pdf-sucker](https:
 ### Com Docker (Recomendado)
 - Docker 20.10+
 - Docker Compose 2.0+
+- Portainer CE (opcional)
 
 ## Deploy com Docker
 
