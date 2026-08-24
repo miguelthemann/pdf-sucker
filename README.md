@@ -1,6 +1,6 @@
 # [PDF Sucker](https://pdf.entr0py.cc/) 🌬️
 
-Aplicação web para compressão de ficheiros PDF no servidor. Reduz o tamanho dos PDFs usando [qpdf](https://qpdf.sourceforge.io/).
+Aplicação web para compressão de ficheiros PDF no servidor. Reduz o tamanho dos PDFs mantendo a qualidade usando [Ghostscript](https://www.ghostscript.com/).
 
 <p align="center">
   <img src="https://img.shields.io/github/actions/workflow/status/miguelthemann/pdf-sucker/docker-publish.yml?style=for-the-badge&logo=github&label=Build" />
@@ -12,7 +12,7 @@ Aplicação web para compressão de ficheiros PDF no servidor. Reduz o tamanho d
 ## Recursos
 
 - ✅ **Upload múltiplo** — até 1000 ficheiros por requisição
-- ✅ **Compressão em servidor** — usa qpdf para reduzir tamanho
+- ✅ **Compressão em servidor** — usa Ghostscript para reduzir tamanho
 - ✅ **3 níveis de qualidade** — escolha entre qualidade vs tamanho
 - ✅ **Interface web moderna** — tema responsivo em vermelho e preto
 - ✅ **Limpeza automática** — ficheiros deletados após 30 minutos
@@ -24,7 +24,7 @@ Aplicação web para compressão de ficheiros PDF no servidor. Reduz o tamanho d
 ### Execução Local
 - PHP 8.3+
 - Apache com módulo `mod_rewrite`
-- qpdf 11.0+
+- Ghostscript 10.0+
 - Extensão PHP: `zip`
 
 ### Com Docker (Recomendado)
@@ -49,7 +49,7 @@ docker-compose up -d
 **O que acontece:**
 - A imagem é descarregada do registry GHCR (ghcr.io/miguelthemann/pdf-sucker:latest)
 - Apache é iniciado na porta 8080
-- qpdf está pré-instalado
+- Ghostscript está pré-instalado
 - Os uploads são persistidos em volume Docker
 
 ### Método 2: Docker direto
@@ -112,7 +112,7 @@ Edite `includes/config.php` para personalizar:
 ## Dockerfile Detalhes
 
 - **Base:** `php:8.3-apache-bookworm`
-- **Dependências:** qpdf, libzip, curl
+- **Dependências:** Ghostscript, libzip, curl
 - **Porta:** 80 (mapeada para 8080 no docker-compose)
 - **Health Check:** Verifica /index.php a cada 30s
 - **Volumes:** `/var/www/html/uploads` (persistência)
@@ -123,10 +123,10 @@ Nenhuma variável de ambiente obrigatória. Tudo é configurado em `includes/con
 
 ## Troubleshooting
 
-### Erro: "qpdf não detetado"
+### Erro: "Ghostscript não detetado"
 ```bash
 # Dentro do contentor
-docker-compose exec web apt-get update && apt-get install -y qpdf
+docker-compose exec web apt-get update && apt-get install -y ghostscript
 ```
 
 ### Upload falha ou não comprime

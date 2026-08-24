@@ -24,7 +24,7 @@ return [
     /** Máximo de ficheiros num único upload */
     'max_files_per_upload' => 1000,
 
-    /** Máximo de compressões paralelas (processos qpdf em simultâneo) */
+    /** Máximo de compressões paralelas (processos Ghostscript em simultâneo) */
     'max_parallel_compression' => 4,
 
     /**
@@ -34,18 +34,18 @@ return [
     'ttl_minutes' => 30,
 
     /**
-    * Executável qpdf (Linux/Ubuntu: "qpdf" no PATH, ou ex. "/usr/bin/qpdf").
-    * Instalação típica: sudo apt install qpdf
+     * Executável Ghostscript (Linux/Ubuntu: "gs" no PATH, ou ex. "/usr/bin/gs").
+     * Instalação típica: sudo apt install ghostscript
      */
-    'qpdf_bin' => 'qpdf',
+    'ghostscript_bin' => 'gs',
 
     /**
-    * Níveis → níveis de compressão Flate do qpdf (0-9)
+     * Níveis → -dPDFSETTINGS do Ghostscript
      */
     'pdf_settings' => [
-        'low' => 6,     // menos compressão, melhor desempenho
-        'medium' => 8,
-        'high' => 9,    // maior compressão
+        'low' => '/printer',   // baixa qualidade (ficheiro maior, melhor qualidade)
+        'medium' => '/ebook',
+        'high' => '/screen', // alta compressão (ficheiro menor)
     ],
 
     'session_name' => 'pdfsucker_sid',

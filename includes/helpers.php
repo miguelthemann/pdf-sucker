@@ -14,7 +14,7 @@ function appJsonResponse(array $data, int $code = 200): void
     exit;
 }
 
-function qpdfAvailable(string $bin): bool
+function ghostscriptAvailable(string $bin): bool
 {
     if ($bin === '') {
         return false;
@@ -25,25 +25,25 @@ function qpdfAvailable(string $bin): bool
 }
 
 /**
- * Resolve o executável do qpdf (PATH ou caminhos habituais em Linux).
+ * Resolve o executável do Ghostscript (PATH ou caminhos habituais em Linux).
  *
  * @return array{0: string, 1: bool} [caminho ou preferido, disponível]
  */
-function resolveQpdfBinary(string $configured): array
+function resolveGhostscriptBinary(string $configured): array
 {
     $configured = trim($configured);
     if ($configured === '') {
-        $configured = 'qpdf';
+        $configured = 'gs';
     }
 
     $candidates = [$configured];
-    if ($configured === 'qpdf') {
-        $candidates[] = '/usr/bin/qpdf';
-        $candidates[] = '/usr/local/bin/qpdf';
+    if ($configured === 'gs') {
+        $candidates[] = '/usr/bin/gs';
+        $candidates[] = '/usr/local/bin/gs';
     }
 
     foreach (array_unique($candidates) as $bin) {
-        if (qpdfAvailable($bin)) {
+        if (ghostscriptAvailable($bin)) {
             return [$bin, true];
         }
     }

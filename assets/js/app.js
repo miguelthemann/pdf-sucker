@@ -7,7 +7,7 @@ import { initI18n, t, onLangChange, localeTag } from './i18n.js';
 /** @typedef {{ localId: string, serverId: string|null, name: string, originalSize: number, compressedSize: number|null, reduction: number|null, status: string, error: string|null }} FileItem */
 
 const cfg = window.__APP__ || {
-    qpdfOk: true,
+    gsOk: true,
     maxFileBytes: 50 * 1024 * 1024,
     maxFiles: 20,
     maxParallelCompression: 4,

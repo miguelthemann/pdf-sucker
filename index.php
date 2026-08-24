@@ -5,7 +5,7 @@ declare(strict_types=1);
 
 require __DIR__ . '/includes/bootstrap.php';
 
-[$qpdfBin, $qpdfOk] = resolveQpdfBinary((string) ($config['qpdf_bin'] ?? 'qpdf'));
+[$gsBin, $gsOk] = resolveGhostscriptBinary((string) ($config['ghostscript_bin'] ?? 'gs'));
 $maxMb = (int) round((int) $config['max_file_bytes'] / (1024 * 1024));
 $ttl = (int) ($config['ttl_minutes'] ?? 30);
 $maxFiles = (int) ($config['max_files_per_upload'] ?? 20);
@@ -49,14 +49,14 @@ $maxFiles = (int) ($config['max_files_per_upload'] ?? 20);
     </header>
 
     <main class="shell">
-        <?php if (!$qpdfOk): ?>
-            <div class="alert alert-warn" role="alert" data-qpdf-status="missing">
-                <strong data-i18n="qpdfMissingTitle">qpdf não detetado.</strong>
-                <span data-i18n-html="qpdfMissingBody">Em Ubuntu Server instale com <code>sudo apt install qpdf</code>. Se o PHP não encontrar <code>qpdf</code> no PATH, defina <code>qpdf_bin</code> em <code>includes/config.php</code> (ex.: <code>/usr/bin/qpdf</code>).</span>
+        <?php if (!$gsOk): ?>
+            <div class="alert alert-warn" role="alert" data-gs-status="missing">
+                <strong data-i18n="gsMissingTitle">Ghostscript não detetado.</strong>
+                <span data-i18n-html="gsMissingBody">Em Ubuntu Server instale com <code>sudo apt install ghostscript</code>. Se o PHP não encontrar <code>gs</code> no PATH, defina <code>ghostscript_bin</code> em <code>includes/config.php</code> (ex.: <code>/usr/bin/gs</code>).</span>
             </div>
         <?php else: ?>
-            <div class="alert alert-ok visually-hidden" data-qpdf-status="ok" aria-live="polite" data-i18n="qpdfOk">
-                qpdf disponível no servidor.
+            <div class="alert alert-ok visually-hidden" data-gs-status="ok" aria-live="polite" data-i18n="gsOk">
+                Ghostscript disponível no servidor.
             </div>
         <?php endif; ?>
 
@@ -159,7 +159,7 @@ $maxFiles = (int) ($config['max_files_per_upload'] ?? 20);
 
     <script>
         window.__APP__ = {
-            qpdfOk: <?php echo $qpdfOk ? 'true' : 'false'; ?>,
+            gsOk: <?php echo $gsOk ? 'true' : 'false'; ?>,
             maxFileBytes: <?php echo (int) $config['max_file_bytes']; ?>,
             maxFiles: <?php echo (int) $maxFiles; ?>,
             maxMb: <?php echo (int) $maxMb; ?>,

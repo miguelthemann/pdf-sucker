@@ -1,13 +1,13 @@
-# PDF Sucker — PHP + Apache + qpdf + ZIP
+# PDF Sucker — PHP + Apache + Ghostscript + ZIP
 FROM php:8.3-apache-bookworm
 
 LABEL org.opencontainers.image.title="PDF Sucker" \
-    org.opencontainers.image.description="Compressão de PDF no servidor com qpdf"
+    org.opencontainers.image.description="Compressão de PDF no servidor com Ghostscript"
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         curl \
-        qpdf \
+        ghostscript \
         libzip-dev \
         unzip \
     && docker-php-ext-install -j"$(nproc)" zip \

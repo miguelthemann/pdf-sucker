@@ -53,14 +53,14 @@ Para utilizadores do PDF Sucker, recomendamos:
 ### File Upload Safety
 
 - O PDF Sucker **apenas aceita ficheiros PDF** (validação de MIME type)
-- qpdf processa ficheiros em ambiente isolado
+- Ghostscript processa ficheiros em ambiente isolado
 - Ficheiros temporários são **eliminados após 30 minutos** (configurável)
 
 ### Known Limitations
 
 - **Path Traversal:** Upload paths são sanitizados, mas sempre valida permissões
 - **DoS via large files:** Limite de 50 MB por ficheiro (configurável)
-- **qpdf exploits:** Mantém qpdf atualizado no contentor base
+- **Ghostscript exploits:** Mantém Ghostscript atualizado no contentor base
 
 ## Scope
 
