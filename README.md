@@ -2,6 +2,11 @@
 
 Aplicação web para compressão de ficheiros PDF no servidor. Reduz o tamanho dos PDFs mantendo a qualidade usando [Ghostscript](https://www.ghostscript.com/).
 
+<p align="center">
+  <img src="https://img.shields.io/github/actions/workflow/status/miguelthemann/pdf-sucker/docker-publish.yml?style=for-the-badge&logo=github&label=Build" />
+  <img src="https://img.shields.io/github/v/release/miguelthemann/pdf-sucker?style=for-the-badge&logo=docker&logoColor=white&label=Docker%20Image" />
+</p>
+
 **Desenvolvido por:** [João](https://github.com/JoaoTom1922) e [Miguel](https://github.com/miguelthemann) (14/05/2026)
 
 ## Recursos
