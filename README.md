@@ -1,10 +1,9 @@
 # PDF Sucker 🌬️ — Edição SCPDPI
 
 <p align="center">
-  <img src="https://img.shields.io/github/actions/workflow/status/miguelthemann/pdf-sucker/docker-publish.yml?style=for-the-badge&logo=github&label=Build" />
-  <img src="https://img.shields.io/github/actions/workflow/status/miguelthemann/pdf-sucker/docker-publish.yml?branch=scpdpi&style=for-the-badge&logo=github&label=Build%20(scpdpi)" />
-  <img src="https://img.shields.io/badge/Docker%20Image-GHCR-2496ED?style=for-the-badge&logo=docker&logoColor=white" />
-</p>
+  <img src="https://img.shields.io/github/actions/workflow/status/miguelthemann/pdf-sucker/docker-publish-scpdpi.yml?branch=scpdpi&style=for-the-badge&logo=github&label=Build%20(scpdpi)" />
+  <img src="https://img.shields.io/badge/Docker%20Image-ghcr.io%2Fpdf--sucker--scpdpi-2496ED?style=for-the-badge&logo=docker&logoColor=white" />
+</p>>
 
 Aplicação web para compressão de ficheiros PDF no servidor. Reduz o tamanho dos PDFs mantendo a qualidade usando [Ghostscript](https://www.ghostscript.com/).
 
