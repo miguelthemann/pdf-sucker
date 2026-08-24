@@ -159,6 +159,32 @@ export function t(key, vars = {}) {
 }
 
 /**
+ * Apply a translation that may contain <code>…</code> only.
+ * Other markup is shown as text, never interpreted as HTML.
+ * @param {Element} node
+ * @param {string} text
+ */
+function setCodeMarkup(node, text) {
+    const frag = document.createDocumentFragment();
+    const re = /<code>([\s\S]*?)<\/code>/gi;
+    let last = 0;
+    let match;
+    while ((match = re.exec(text)) !== null) {
+        if (match.index > last) {
+            frag.appendChild(document.createTextNode(text.slice(last, match.index)));
+        }
+        const code = document.createElement('code');
+        code.textContent = match[1];
+        frag.appendChild(code);
+        last = re.lastIndex;
+    }
+    if (last < text.length) {
+        frag.appendChild(document.createTextNode(text.slice(last)));
+    }
+    node.replaceChildren(frag);
+}
+
+/**
  * @param {Lang} lang
  */
 export function setLang(lang) {
@@ -197,7 +223,7 @@ export function applyStaticTranslations(vars = {}) {
     document.querySelectorAll('[data-i18n-html]').forEach((node) => {
         const key = node.getAttribute('data-i18n-html');
         if (!key) return;
-        node.innerHTML = t(key, all);
+        setCodeMarkup(node, t(key, all));
     });
 
     document.querySelectorAll('[data-i18n-aria]').forEach((node) => {
