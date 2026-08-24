@@ -11,7 +11,7 @@ Aplicação web para compressão de ficheiros PDF no servidor. Reduz o tamanho d
 - ✅ **3 níveis de qualidade** — escolha entre qualidade vs tamanho
 - ✅ **Interface web moderna** — tema responsivo em vermelho e preto
 - ✅ **Limpeza automática** — ficheiros deletados após 30 minutos
-- ✅ **Download direto** — descarregue PDFs comprimidos em ZIP
+- ✅ **Download direto** — descarregue PDFs comprimidos em ZIP (apenas ficheiros locais validados)
 - ✅ **Containerizado** — deploy fácil com Docker
 
 ## Requisitos
@@ -134,6 +134,16 @@ docker-compose exec web apt-get update && apt-get install -y ghostscript
 # Ver logs
 docker-compose logs -f web
 ```
+
+## Segurança
+
+A descarga de PDFs passa por `download.php`. O caminho guardado na sessão **não** é passado diretamente a `is_file()`, `filesize()` nem `readfile()`:
+
+- Caminhos com wrappers (`http://`, `php://`, etc.) são rejeitados, para o PHP não ir buscar um URL remoto (`allow_url_fopen`).
+- O caminho é resolvido com `realpath()`.
+- Só é servido se for um ficheiro regular cujo caminho canónico está dentro de `uploads/temp` ou `uploads/compressed`.
+
+O acesso HTTP direto a `uploads/` e a `includes/` está bloqueado por `.htaccess`. Relatórios de vulnerabilidades: ver [SECURITY.md](SECURITY.md).
 
 ## Licença
 
