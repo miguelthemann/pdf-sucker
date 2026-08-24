@@ -13,7 +13,7 @@ Esta é a branch **`scpdpi`**, uma variante personalizada do [pdf-sucker](https:
 - ✅ **3 níveis de qualidade** — escolha entre qualidade vs tamanho
 - ✅ **Interface web com tema SCPDPI** — visual azul, com branding e link para scpdpi.com
 - ✅ **Limpeza automática** — ficheiros deletados após 30 minutos
-- ✅ **Download direto** — descarregue PDFs comprimidos em ZIP
+- ✅ **Download direto** — descarregue PDFs comprimidos em ZIP (apenas ficheiros locais validados)
 - ✅ **Containerizado** — deploy fácil com Docker, com correção automática de permissões em `uploads/` (útil em volumes geridos por Portainer, onde ficam com dono `root`)
 
 ## Requisitos
@@ -125,7 +125,17 @@ return [
 ];
 ```
 
-A lógica de arranque (sessão, headers de segurança, limpeza de expirados) foi também separada para `includes/bootstrap.php`, e as funções auxiliares (resolução do binário Ghostscript, respostas JSON, etc.) para `includes/helpers.php`.
+A lógica de arranque (sessão, headers de segurança, limpeza de expirados) foi também separada para `includes/bootstrap.php`, e as funções auxiliares (resolução do binário Ghostscript, respostas JSON, contenção de caminhos em `uploads/`, etc.) para `includes/helpers.php`.
+
+## Segurança
+
+A descarga de PDFs passa por `download.php`. O caminho guardado na sessão **não** é passado diretamente a `is_file()`, `filesize()` nem `readfile()`:
+
+- Caminhos com wrappers (`http://`, `php://`, etc.) são rejeitados, para o PHP não ir buscar um URL remoto (`allow_url_fopen`).
+- O caminho é resolvido com `realpath()`.
+- Só é servido se `pathIsFileInsideDir()` confirmar um ficheiro regular cujo caminho canónico está dentro de `uploads/temp` ou `uploads/compressed` (conforme o tipo pedido).
+
+O Apache desta branch bloqueia acesso HTTP direto a `/uploads` (ver `docker/apache/zz-app.conf` e `.htaccess`). Relatórios de vulnerabilidades: ver [SECURITY.md](SECURITY.md).
 
 ## Utilização
 

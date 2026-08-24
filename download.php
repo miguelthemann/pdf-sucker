@@ -57,10 +57,17 @@ $rootForPath = $type === 'compressed' ? $compressedRoot : $tempRoot;
 if (
     !is_string($path)
     || $path === ''
-    || !is_file($path)
     || $rootForPath === ''
-    || !pathIsFileInsideDir($path, $rootForPath)
+    || str_contains($path, '://')
 ) {
+    http_response_code(404);
+    header('Content-Type: text/plain; charset=utf-8');
+    echo 'Ficheiro não disponível.';
+    exit;
+}
+
+$safePath = realpath($path);
+if ($safePath === false || !pathIsFileInsideDir($safePath, $rootForPath)) {
     http_response_code(404);
     header('Content-Type: text/plain; charset=utf-8');
     echo 'Ficheiro não disponível.';
@@ -71,11 +78,11 @@ $downloadName = sanitizeStoredBasename($downloadName);
 
 header('Content-Type: application/pdf');
 header('Content-Disposition: ' . httpContentDispositionAttachment($downloadName));
-header('Content-Length: ' . (string) filesize($path));
+header('Content-Length: ' . (string) filesize($safePath));
 header('X-Content-Type-Options: nosniff');
 header('Cache-Control: no-store');
 
-readfile($path);
+readfile($safePath);
 
 // Após descarga: remover temporários deste item
 unlinkUploadPathIfExists($meta['original_path'] ?? null, $config);
