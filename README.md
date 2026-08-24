@@ -25,6 +25,7 @@ Aplicação web para compressão de ficheiros PDF no servidor. Reduz o tamanho d
 ### Com Docker (Recomendado)
 - Docker 20.10+
 - Docker Compose 2.0+
+- Portainer CE (opcional)
 
 ## Deploy com Docker
 
