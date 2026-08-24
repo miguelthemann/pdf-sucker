@@ -4,7 +4,7 @@ Aplicação web para compressão de ficheiros PDF no servidor. Reduz o tamanho d
 
 <p align="center">
   <img src="https://img.shields.io/github/actions/workflow/status/miguelthemann/pdf-sucker/docker-publish.yml?style=for-the-badge&logo=github&label=Build" />
-  <img src="https://ghcr-badge.egpivo.com/miguelthemann/pdf-sucker/latest_tag?trim=major&label=Docker%20Image" alt="Docker Image Version" style="max-height:28px" />
+  <img src="https://img.shields.io/badge/Docker%20Image-GHCR-2496ED?style=for-the-badge&logo=docker&logoColor=white" />
 </p>
 
 **Desenvolvido por:** [João](https://github.com/JoaoTom1922) e [Miguel](https://github.com/miguelthemann) (14/05/2026)
