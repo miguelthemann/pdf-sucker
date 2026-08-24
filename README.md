@@ -1,6 +1,8 @@
-# PDF Sucker 🌬️
+# PDF Sucker 🌬️ — Edição SCPDPI
 
 Aplicação web para compressão de ficheiros PDF no servidor. Reduz o tamanho dos PDFs mantendo a qualidade usando [Ghostscript](https://www.ghostscript.com/).
+
+Esta é a branch **`scpdpi`**, uma variante personalizada do [pdf-sucker](https://github.com/miguelthemann/pdf-sucker) feita para uso interno em [scpdpi.com](https://scpdpi.com/), com tema próprio e configuração reestruturada.
 
 **Desenvolvido por:** [João](https://github.com/JoaoTom1922) e [Miguel](https://github.com/miguelthemann) (14/05/2026)
 
@@ -9,10 +11,10 @@ Aplicação web para compressão de ficheiros PDF no servidor. Reduz o tamanho d
 - ✅ **Upload múltiplo** — até 1000 ficheiros por requisição
 - ✅ **Compressão em servidor** — usa Ghostscript para reduzir tamanho
 - ✅ **3 níveis de qualidade** — escolha entre qualidade vs tamanho
-- ✅ **Interface web moderna** — tema responsivo em vermelho e preto
+- ✅ **Interface web com tema SCPDPI** — visual azul, com branding e link para scpdpi.com
 - ✅ **Limpeza automática** — ficheiros deletados após 30 minutos
 - ✅ **Download direto** — descarregue PDFs comprimidos em ZIP
-- ✅ **Containerizado** — deploy fácil com Docker
+- ✅ **Containerizado** — deploy fácil com Docker, com correção automática de permissões em `uploads/` (útil em volumes geridos por Portainer, onde ficam com dono `root`)
 
 ## Requisitos
 
@@ -28,39 +30,46 @@ Aplicação web para compressão de ficheiros PDF no servidor. Reduz o tamanho d
 
 ## Deploy com Docker
 
-### Método 1: Docker Compose (Mais fácil)
+### Método 1: Docker Compose (build local — padrão desta branch)
 
 ```bash
-# Clone ou aceda ao repositório
+# Clone o repositório e mude para a branch scpdpi
+git clone https://github.com/miguelthemann/pdf-sucker.git
 cd pdf-sucker
+git checkout scpdpi
 
-# Inicie o serviço
-docker-compose up -d
+# Construa e inicie o serviço
+docker-compose up -d --build
 
 # Aceda em http://localhost:8080
 ```
 
 **O que acontece:**
-- A imagem é descarregada do registry GHCR (ghcr.io/miguelthemann/pdf-sucker:latest)
+- A imagem é construída localmente a partir do `Dockerfile` (`pdf-sucker-scpdpi:local`)
 - Apache é iniciado na porta 8080
 - Ghostscript está pré-instalado
-- Os uploads são persistidos em volume Docker
+- Os uploads são persistidos no volume `uploads_data`
+- No arranque, o `entrypoint.sh` corrige automaticamente o dono/permissões de `uploads/` para `www-data`
 
-### Método 2: Docker direto
+### Método 2: Imagem publicada via GHCR
+
+Um workflow de CI (`docker-publish-scpdpi.yml`) publica automaticamente a imagem desta branch:
 
 ```bash
 # Descarregar imagem
-docker pull ghcr.io/miguelthemann/pdf-sucker:latest
+docker pull ghcr.io/miguelthemann/pdf-sucker-scpdpi:latest
 
 # Executar contentor
 docker run -d \
-  --name pdf-sucker \
+  --name pdf-sucker-scpdpi \
   -p 8080:80 \
-  -v pdf-uploads:/var/www/html/uploads \
-  ghcr.io/miguelthemann/pdf-sucker:latest
+  -v pdf-sucker-scpdpi-uploads:/var/www/html/uploads \
+  ghcr.io/miguelthemann/pdf-sucker-scpdpi:latest
 
 # Aceda em http://localhost:8080
 ```
+
+> Nota: o nome da imagem é **`pdf-sucker-scpdpi`** (diferente da branch `main`, que usa `pdf-sucker`).
 
 ### Parar o serviço
 
@@ -69,31 +78,53 @@ docker run -d \
 docker-compose down
 
 # Se usou Docker direto
-docker stop pdf-sucker
-docker rm pdf-sucker
+docker stop pdf-sucker-scpdpi
+docker rm pdf-sucker-scpdpi
 ```
 
 ## Configuração
 
-Edite `includes/config.php` para personalizar:
+Nesta branch, a configuração em `includes/config.php` foi reestruturada (deixou de ser uma lista simples de chaves — agora inclui caminhos, limites de lote e resolução do binário do Ghostscript):
 
 ```php
-// Tamanho máximo por ficheiro (padrão: 50 MB)
-'max_file_bytes' => 50 * 1024 * 1024,
+return [
+    'base_path' => dirname(__DIR__),
 
-// Tempo de expiração dos ficheiros (padrão: 30 minutos)
-'ttl_minutes' => 30,
+    'uploads' => [
+        'temp' => dirname(__DIR__) . '/uploads/temp',
+        'compressed' => dirname(__DIR__) . '/uploads/compressed',
+    ],
 
-// Máximo de ficheiros por upload (padrão: 1000)
-'max_files_per_upload' => 1000,
+    // Tamanho máximo por ficheiro (padrão: 50 MB)
+    'max_file_bytes' => 50 * 1024 * 1024,
 
-// Níveis de compressão PDF
-'pdf_settings' => [
-    'low' => '/printer',   // Baixa compressão, melhor qualidade
-    'medium' => '/ebook',  // Balanço
-    'high' => '/screen',   // Máxima compressão
-],
+    // Total máximo por pedido de upload (padrão: 5 GB)
+    'max_batch_bytes' => 5 * 1024 * 1024 * 1024,
+
+    // Máximo de ficheiros por upload (padrão: 1000)
+    'max_files_per_upload' => 1000,
+
+    // Máximo de compressões Ghostscript em paralelo
+    'max_parallel_compression' => 4,
+
+    // Tempo de expiração dos ficheiros (padrão: 30 minutos)
+    'ttl_minutes' => 30,
+
+    // Executável do Ghostscript (resolvido automaticamente se "gs" estiver no PATH)
+    'ghostscript_bin' => 'gs',
+
+    // Níveis de compressão PDF (-dPDFSETTINGS)
+    'pdf_settings' => [
+        'low' => '/printer',   // Baixa compressão, melhor qualidade
+        'medium' => '/ebook',  // Balanço
+        'high' => '/screen',   // Máxima compressão
+    ],
+
+    'session_name' => 'pdfsucker_sid',
+];
 ```
+
+A lógica de arranque (sessão, headers de segurança, limpeza de expirados) foi também separada para `includes/bootstrap.php`, e as funções auxiliares (resolução do binário Ghostscript, respostas JSON, etc.) para `includes/helpers.php`.
 
 ## Utilização
 
@@ -103,12 +134,15 @@ Edite `includes/config.php` para personalizar:
 4. **Clique "Comprimir"** e aguarde
 5. **Descarregue** os ficheiros em ZIP
 
-## Dockerfile Detalhes
+## Estrutura Docker Detalhes
 
 - **Base:** `php:8.3-apache-bookworm`
-- **Dependências:** Ghostscript, libzip, curl
+- **Dependências:** Ghostscript, libzip, curl, unzip
 - **Porta:** 80 (mapeada para 8080 no docker-compose)
-- **Health Check:** Verifica /index.php a cada 30s
+- **Configuração Apache:** `docker/apache/zz-app.conf` — ativa `AllowOverride All` para o `.htaccess` funcionar (ex.: bloqueio de acesso direto a `/uploads`)
+- **Configuração PHP:** `docker/php/conf.d/uploads.ini` — alinhada com `includes/config.php` (uploads grandes, muitos ficheiros): `upload_max_filesize=512M`, `post_max_size=5120M`, `max_file_uploads=1000`, `memory_limit=512M`, `max_execution_time=600`
+- **Entrypoint:** `docker/entrypoint.sh` — corrige dono/permissões de `uploads/` a cada arranque antes de iniciar o Apache
+- **Health Check:** verifica `/` a cada 30s
 - **Volumes:** `/var/www/html/uploads` (persistência)
 
 ## Variáveis de Ambiente
@@ -124,8 +158,8 @@ docker-compose exec web apt-get update && apt-get install -y ghostscript
 ```
 
 ### Upload falha ou não comprime
-- Verifique permissões da pasta `uploads/` (deve ser escrita por `www-data`)
-- Verifique `max_file_bytes` em config.php
+- Verifique permissões da pasta `uploads/` (deve ser escrita por `www-data`) — em deploys via Portainer, confirme que o `entrypoint.sh` correu sem erros nos logs
+- Verifique `max_file_bytes` e `max_batch_bytes` em `includes/config.php`
 - Verifique espaço disponível em disco
 
 ### Contentor não inicia
@@ -137,7 +171,3 @@ docker-compose logs -f web
 ## Licença
 
 Este projeto está licenciado sob a [Licença MIT](LICENSE). Veja o ficheiro LICENSE para detalhes completos.
-
----
-
-**Made by [João](https://github.com/JoaoTom1922) e [Miguel](https://github.com/miguelthemann)** 🚀
