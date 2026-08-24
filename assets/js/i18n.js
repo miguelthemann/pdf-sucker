@@ -10,10 +10,10 @@ const STRINGS = {
         brandSub: 'Menos megabytes, mesmo PDF — Made by João e Miguel',
         limitPerFile: 'Limite {mb} MB / ficheiro',
         maxFiles: 'Máx. {n} ficheiros',
-        gsMissingTitle: 'Ghostscript não detetado.',
-        gsMissingBody:
-            'Em Ubuntu Server instale com <code>sudo apt install ghostscript</code>. Se o PHP não encontrar <code>gs</code> no PATH, defina <code>ghostscript_bin</code> em <code>includes/config.php</code> (ex.: <code>/usr/bin/gs</code>).',
-        gsOk: 'Ghostscript disponível no servidor.',
+        qpdfMissingTitle: 'qpdf não detetado.',
+        qpdfMissingBody:
+            'Em Ubuntu Server instale com <code>sudo apt install qpdf</code>. Se o PHP não encontrar <code>qpdf</code> no PATH, defina <code>qpdf_bin</code> em <code>includes/config.php</code> (ex.: <code>/usr/bin/qpdf</code>).',
+        qpdfOk: 'qpdf disponível no servidor.',
         dropZoneLabel: 'Área de envio de ficheiros',
         dropTitle: 'Largue os PDFs aqui',
         dropHintPrefix: 'ou ',
@@ -64,10 +64,10 @@ const STRINGS = {
         brandSub: 'Fewer megabytes, same PDF — Made by João e Miguel',
         limitPerFile: 'Limit {mb} MB / file',
         maxFiles: 'Max {n} files',
-        gsMissingTitle: 'Ghostscript not detected.',
-        gsMissingBody:
-            'On Ubuntu Server install with <code>sudo apt install ghostscript</code>. If PHP cannot find <code>gs</code> in PATH, set <code>ghostscript_bin</code> in <code>includes/config.php</code> (e.g. <code>/usr/bin/gs</code>).',
-        gsOk: 'Ghostscript is available on the server.',
+        qpdfMissingTitle: 'qpdf not detected.',
+        qpdfMissingBody:
+            'On Ubuntu Server install with <code>sudo apt install qpdf</code>. If PHP cannot find <code>qpdf</code> in PATH, set <code>qpdf_bin</code> in <code>includes/config.php</code> (e.g. <code>/usr/bin/qpdf</code>).',
+        qpdfOk: 'qpdf is available on the server.',
         dropZoneLabel: 'File upload area',
         dropTitle: 'Drop PDFs here',
         dropHintPrefix: 'or ',
