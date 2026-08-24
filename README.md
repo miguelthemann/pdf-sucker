@@ -2,7 +2,7 @@
 
 Aplicação web para compressão de ficheiros PDF no servidor. Reduz o tamanho dos PDFs mantendo a qualidade usando [Ghostscript](https://www.ghostscript.com/).
 
-Esta é a branch **`scpdpi`**, uma variante personalizada do [pdf-sucker](https://github.com/miguelthemann/pdf-sucker) feita para uso interno em [scpdpi.com](https://scpdpi.com/), com tema próprio e configuração reestruturada.
+Esta é a branch **`scpdpi`**, uma variante personalizada do [pdf-sucker](https://github.com/miguelthemann/pdf-sucker) feita para uso interno na [scpdpi.com](https://scpdpi.com/), com tema próprio e configuração reestruturada.
 
 **Desenvolvido por:** [João](https://github.com/JoaoTom1922) e [Miguel](https://github.com/miguelthemann) (14/05/2026)
 
@@ -128,7 +128,7 @@ A lógica de arranque (sessão, headers de segurança, limpeza de expirados) foi
 
 ## Utilização
 
-1. **Abra** http://localhost:8080
+1. **Abra** http://ip-da-máquina:8080
 2. **Arraste ficheiros PDF** ou clique para selecionar
 3. **Escolha o nível de qualidade** (low/medium/high)
 4. **Clique "Comprimir"** e aguarde
