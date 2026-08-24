@@ -137,7 +137,3 @@ docker-compose logs -f web
 ## Licença
 
 Este projeto está licenciado sob a [Licença MIT](LICENSE). Veja o ficheiro LICENSE para detalhes completos.
-
----
-
-**Made by [João](https://github.com/JoaoTom1922) e [Miguel](https://github.com/miguelthemann)** 🚀
