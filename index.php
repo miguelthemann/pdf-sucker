@@ -5,7 +5,7 @@ declare(strict_types=1);
 
 require __DIR__ . '/includes/bootstrap.php';
 
-[$gsBin, $gsOk] = resolveGhostscriptBinary((string) ($config['ghostscript_bin'] ?? 'gs'));
+[$qpdfBin, $qpdfOk] = resolveQpdfBinary((string) ($config['qpdf_bin'] ?? 'qpdf'));
 $maxMb = (int) round((int) $config['max_file_bytes'] / (1024 * 1024));
 $ttl = (int) ($config['ttl_minutes'] ?? 30);
 $maxFiles = (int) ($config['max_files_per_upload'] ?? 20);
@@ -47,14 +47,14 @@ $maxFiles = (int) ($config['max_files_per_upload'] ?? 20);
     </header>
 
     <main class="shell">
-        <?php if (!$gsOk): ?>
-            <div class="alert alert-warn" role="alert" data-gs-status="missing">
-                <strong>Ghostscript não detetado.</strong>
-                Em Ubuntu Server instale com <code>sudo apt install ghostscript</code>. Se o PHP não encontrar <code>gs</code> no PATH, defina <code>ghostscript_bin</code> em <code>includes/config.php</code> (ex.: <code>/usr/bin/gs</code>).
+        <?php if (!$qpdfOk): ?>
+            <div class="alert alert-warn" role="alert" data-qpdf-status="missing">
+                <strong>qpdf não detetado.</strong>
+                Em Ubuntu Server instale com <code>sudo apt install qpdf</code>. Se o PHP não encontrar <code>qpdf</code> no PATH, defina <code>qpdf_bin</code> em <code>includes/config.php</code> (ex.: <code>/usr/bin/qpdf</code>).
             </div>
         <?php else: ?>
-            <div class="alert alert-ok visually-hidden" data-gs-status="ok" aria-live="polite">
-                Ghostscript disponível no servidor.
+            <div class="alert alert-ok visually-hidden" data-qpdf-status="ok" aria-live="polite">
+                qpdf disponível no servidor.
             </div>
         <?php endif; ?>
 
@@ -151,7 +151,7 @@ $maxFiles = (int) ($config['max_files_per_upload'] ?? 20);
 
     <script>
         window.__APP__ = {
-            gsOk: <?php echo $gsOk ? 'true' : 'false'; ?>,
+            qpdfOk: <?php echo $qpdfOk ? 'true' : 'false'; ?>,
             maxFileBytes: <?php echo (int) $config['max_file_bytes']; ?>,
             maxFiles: <?php echo (int) $maxFiles; ?>,
             maxParallelCompression: <?php echo (int) ($config['max_parallel_compression'] ?? 4); ?>

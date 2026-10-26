@@ -6,7 +6,7 @@ import { uploadPdfs, compressPdfs, deleteServerFiles, downloadZip } from './api.
 /** @typedef {{ localId: string, serverId: string|null, name: string, originalSize: number, compressedSize: number|null, reduction: number|null, status: string, error: string|null }} FileItem */
 
 const cfg = window.__APP__ || {
-    gsOk: true,
+    qpdfOk: true,
     maxFileBytes: 50 * 1024 * 1024,
     maxFiles: 20,
     maxParallelCompression: 4,
@@ -212,43 +212,50 @@ async function handleIncomingFiles(fileArr) {
 
     setProgress(true, 'A enviar ficheiros…', 0);
 
-    try {
-        const res = await uploadPdfs(batch, (pct) => {
-            setProgress(true, 'A enviar ficheiros…', pct);
-        });
+    const UPLOAD_CHUNK_SIZE = 10;
+    const successfulUploads = [];
 
-        let i = 0;
-        const successfulUploads = [];
-        for (const part of res.files || []) {
-            const f = batch[i++];
-            if (!f) break;
-            if (part.ok && part.id) {
-                const item = {
-                    localId: randomId(),
-                    serverId: part.id,
-                    name: part.name || f.name,
-                    originalSize: part.size ?? f.size,
-                    compressedSize: null,
-                    reduction: null,
-                    status: 'ready',
-                    error: null,
-                };
-                items.push(item);
-                successfulUploads.push(item);
-            } else {
-                items.push({
-                    localId: randomId(),
-                    serverId: null,
-                    name: f.name,
-                    originalSize: f.size,
-                    compressedSize: null,
-                    reduction: null,
-                    status: 'error',
-                    error: part.error || 'Erro no envio.',
-                });
+    try {
+        const totalChunks = Math.ceil(batch.length / UPLOAD_CHUNK_SIZE);
+        for (let c = 0; c < totalChunks; c++) {
+            const chunkFiles = batch.slice(c * UPLOAD_CHUNK_SIZE, (c + 1) * UPLOAD_CHUNK_SIZE);
+            const res = await uploadPdfs(chunkFiles, (pct) => {
+                const overallPct = Math.round(((c + (pct / 100)) / totalChunks) * 100);
+                setProgress(true, 'A enviar ficheiros…', overallPct);
+            });
+
+            let i = 0;
+            for (const part of res.files || []) {
+                const f = chunkFiles[i++];
+                if (!f) break;
+                if (part.ok && part.id) {
+                    const item = {
+                        localId: randomId(),
+                        serverId: part.id,
+                        name: part.name || f.name,
+                        originalSize: part.size ?? f.size,
+                        compressedSize: null,
+                        reduction: null,
+                        status: 'ready',
+                        error: null,
+                    };
+                    items.push(item);
+                    successfulUploads.push(item);
+                } else {
+                    items.push({
+                        localId: randomId(),
+                        serverId: null,
+                        name: f.name,
+                        originalSize: f.size,
+                        compressedSize: null,
+                        reduction: null,
+                        status: 'error',
+                        error: part.error || 'Erro no envio.',
+                    });
+                }
             }
+            renderList();
         }
-        renderList();
         
         if (successfulUploads.length > 0) {
             await autoCompressFiles(successfulUploads);

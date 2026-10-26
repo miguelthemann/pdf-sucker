@@ -1,6 +1,6 @@
 # PDF Sucker 🌬️ — Edição SCPDPI
 
-Aplicação web para compressão de ficheiros PDF no servidor. Reduz o tamanho dos PDFs mantendo a qualidade usando [Ghostscript](https://www.ghostscript.com/).
+Aplicação web para compressão de ficheiros PDF no servidor. Reduz o tamanho dos PDFs mantendo a qualidade usando [qpdf](https://qpdf.readthedocs.io/).
 
 <p align="center">
   <img src="https://img.shields.io/github/actions/workflow/status/miguelthemann/pdf-sucker/docker-publish-scpdpi.yml?branch=scpdpi&style=for-the-badge&logo=github&label=Build%20(scpdpi)" />
@@ -14,7 +14,7 @@ Esta é a branch **`scpdpi`**, uma variante personalizada do [pdf-sucker](https:
 ## Recursos
 
 - ✅ **Upload múltiplo** — até 1000 ficheiros por requisição
-- ✅ **Compressão em servidor** — usa Ghostscript para reduzir tamanho
+- ✅ **Compressão em servidor** — usa qpdf para reduzir tamanho
 - ✅ **3 níveis de qualidade** — escolha entre qualidade vs tamanho
 - ✅ **Interface web com tema SCPDPI** — visual azul, com branding e link para scpdpi.com
 - ✅ **Limpeza automática** — ficheiros deletados após 30 minutos
@@ -26,13 +26,14 @@ Esta é a branch **`scpdpi`**, uma variante personalizada do [pdf-sucker](https:
 ### Execução Local
 - PHP 8.3+
 - Apache com módulo `mod_rewrite`
-- Ghostscript 10.0+
+- qpdf 11.0+
 - Extensão PHP: `zip`
 
 ### Com Docker (Recomendado)
 - Docker 20.10+
 - Docker Compose 2.0+
 - Portainer CE (opcional)
+- qpdf está pré-instalado na imagem Docker oficial
 
 ## Deploy com Docker
 
@@ -90,7 +91,7 @@ docker rm pdf-sucker-scpdpi
 
 ## Configuração
 
-Nesta branch, a configuração em `includes/config.php` foi reestruturada (deixou de ser uma lista simples de chaves — agora inclui caminhos, limites de lote e resolução do binário do Ghostscript):
+Nesta branch, a configuração em `includes/config.php` foi reestruturada (deixou de ser uma lista simples de chaves — agora inclui caminhos, limites de lote e resolução do binário do qpdf):
 
 ```php
 return [
@@ -104,33 +105,33 @@ return [
     // Tamanho máximo por ficheiro (padrão: 50 MB)
     'max_file_bytes' => 50 * 1024 * 1024,
 
-    // Total máximo por pedido de upload (padrão: 5 GB)
-    'max_batch_bytes' => 5 * 1024 * 1024 * 1024,
+    // Total máximo por pedido de upload (padrão: 50 GB)
+    'max_batch_bytes' => 50 * 1024 * 1024 * 1000,
 
     // Máximo de ficheiros por upload (padrão: 1000)
     'max_files_per_upload' => 1000,
 
-    // Máximo de compressões Ghostscript em paralelo
+    // Máximo de compressões qpdf em paralelo
     'max_parallel_compression' => 4,
 
     // Tempo de expiração dos ficheiros (padrão: 30 minutos)
     'ttl_minutes' => 30,
 
-    // Executável do Ghostscript (resolvido automaticamente se "gs" estiver no PATH)
-    'ghostscript_bin' => 'gs',
+    // Executável do qpdf (resolvido automaticamente se "qpdf" estiver no PATH)
+    'qpdf_bin' => 'qpdf',
 
-    // Níveis de compressão PDF (-dPDFSETTINGS)
+    // Níveis de compressão Flate do qpdf (0-9)
     'pdf_settings' => [
-        'low' => '/printer',   // Baixa compressão, melhor qualidade
-        'medium' => '/ebook',  // Balanço
-        'high' => '/screen',   // Máxima compressão
+        'low' => 6,     // Baixa compressão, melhor desempenho
+        'medium' => 8,  // Equilíbrio
+        'high' => 9,    // Maior compressão
     ],
 
     'session_name' => 'pdfsucker_sid',
 ];
 ```
 
-A lógica de arranque (sessão, headers de segurança, limpeza de expirados) foi também separada para `includes/bootstrap.php`, e as funções auxiliares (resolução do binário Ghostscript, respostas JSON, contenção de caminhos em `uploads/`, etc.) para `includes/helpers.php`.
+A lógica de arranque (sessão, headers de segurança, limpeza de expirados) foi também separada para `includes/bootstrap.php`, e as funções auxiliares (resolução do binário qpdf, respostas JSON, contenção de caminhos em `uploads/`, etc.) para `includes/helpers.php`.
 
 ## Segurança
 
@@ -153,10 +154,10 @@ O Apache desta branch bloqueia acesso HTTP direto a `/uploads` (ver `docker/apac
 ## Estrutura Docker Detalhes
 
 - **Base:** `php:8.3-apache-bookworm`
-- **Dependências:** Ghostscript, libzip, curl, unzip
+- **Dependências:** qpdf, libzip, curl, unzip
 - **Porta:** 80 (mapeada para 8080 no docker-compose)
-- **Configuração Apache:** `docker/apache/zz-app.conf` — ativa `AllowOverride All` para o `.htaccess` funcionar (ex.: bloqueio de acesso direto a `/uploads`)
-- **Configuração PHP:** `docker/php/conf.d/uploads.ini` — alinhada com `includes/config.php` (uploads grandes, muitos ficheiros): `upload_max_filesize=512M`, `post_max_size=5120M`, `max_file_uploads=1000`, `memory_limit=512M`, `max_execution_time=600`
+- **Configuração Apache:** `docker/apache/zz-app.conf` — ativa `AllowOverride All` para o `.htaccess` funcionar (ex.: bloqueio de acesso direto a `/uploads`) e define `LimitRequestBody 0`
+- **Configuração PHP:** `docker/php/conf.d/uploads.ini` — alinhada com `includes/config.php` (uploads grandes, muitos ficheiros): `upload_max_filesize=512M`, `post_max_size=55G`, `max_file_uploads=1000`, `memory_limit=512M`, `max_execution_time=3600`
 - **Entrypoint:** `docker/entrypoint.sh` — corrige dono/permissões de `uploads/` a cada arranque antes de iniciar o Apache
 - **Health Check:** verifica `/` a cada 30s
 - **Volumes:** `/var/www/html/uploads` (persistência)
@@ -167,10 +168,10 @@ Nenhuma variável de ambiente obrigatória. Tudo é configurado em `includes/con
 
 ## Troubleshooting
 
-### Erro: "Ghostscript não detetado"
+### Erro: "qpdf não detetado"
 ```bash
 # Dentro do contentor
-docker-compose exec web apt-get update && apt-get install -y ghostscript
+docker-compose exec web apt-get update && apt-get install -y qpdf
 ```
 
 ### Upload falha ou não comprime

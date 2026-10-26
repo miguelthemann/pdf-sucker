@@ -7,9 +7,12 @@ $config = require __DIR__ . '/config.php';
 
 if (session_status() === PHP_SESSION_NONE) {
     session_name($config['session_name']);
+    $isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+        || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https');
     session_start([
         'cookie_httponly' => true,
         'cookie_samesite' => 'Lax',
+        'cookie_secure' => $isHttps,
     ]);
 }
 

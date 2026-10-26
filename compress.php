@@ -43,11 +43,11 @@ usort($ids, static function ($a, $b): int {
     return $sizeB <=> $sizeA;
 });
 
-[$gsBin, $gsOk] = resolveGhostscriptBinary((string) ($config['ghostscript_bin'] ?? 'gs'));
-if (!$gsOk) {
+[$qpdfBin, $qpdfOk] = resolveQpdfBinary((string) ($config['qpdf_bin'] ?? 'qpdf'));
+if (!$qpdfOk) {
     appJsonResponse([
         'ok' => false,
-        'error' => 'O Ghostscript não está disponível no servidor. Em Ubuntu: sudo apt install ghostscript',
+        'error' => 'O qpdf não está disponível no servidor. Em Ubuntu: sudo apt install qpdf',
     ], 503);
 }
 
@@ -66,14 +66,14 @@ $maxParallel = (int) ($config['max_parallel_compression'] ?? 4);
 
 /**
  * Processa um ficheiro individual para compressão
- * @param string $gsBin Caminho para o binário Ghostscript
- * @param string $pdfSetting Nível de compressão PDF
+ * @param string $qpdfBin Caminho para o binário qpdf
+ * @param int $pdfSetting Nível de compressão Flate
  * @param string $id ID do ficheiro
  * @param string $rpOutDir Caminho real do diretório de saída
  * @param string $rpTempDir Caminho real do diretório temporário
  * @return array Resultado da compressão
  */
-function compressFile($gsBin, $pdfSetting, $id, $rpOutDir, $rpTempDir) {
+function compressFile($qpdfBin, $pdfSetting, $id, $rpOutDir, $rpTempDir) {
     if (!is_string($id) || !preg_match('/^[a-f0-9]{32}$/', $id)) {
         return ['ok' => false, 'id' => $id, 'error' => 'Identificador inválido.'];
     }
@@ -97,19 +97,17 @@ function compressFile($gsBin, $pdfSetting, $id, $rpOutDir, $rpTempDir) {
     }
     $output = $rpOutDir . DIRECTORY_SEPARATOR . $outName;
 
-    $cmd = escapeshellarg($gsBin)
-        . ' -sDEVICE=pdfwrite'
-        . ' -dCompatibilityLevel=1.4'
-        . ' -dSAFER'
-        . ' -dPDFSETTINGS=' . $pdfSetting
-        . ' -dNOPAUSE -dQUIET -dBATCH'
-        . ' -sOutputFile=' . escapeshellarg($output)
+    $cmd = escapeshellarg($qpdfBin)
+        . ' --stream-data=compress'
+        . ' --object-streams=generate'
+        . ' --compression-level=' . (int) $pdfSetting
         . ' ' . escapeshellarg($input)
+        . ' ' . escapeshellarg($output)
         . ' 2>&1';
 
     $outputLog = [];
     $code = 0;
-    exec($cmd, $outputLog, $code);   
+    exec($cmd, $outputLog, $code);
 
     if ($code !== 0 || !is_file($output) || is_link($output) || !pathIsFileInsideDir($output, $rpOutDir) || filesize($output) === 0) {
         unlinkUploadPathIfExists(is_file($output) ? $output : null, ['uploads' => ['compressed' => $rpOutDir]]);
@@ -117,7 +115,7 @@ function compressFile($gsBin, $pdfSetting, $id, $rpOutDir, $rpTempDir) {
             'ok' => false,
             'id' => $id,
             'name' => (string) ($meta['original_name'] ?? ''),
-            'error' => 'Falha ao executar o Ghostscript. Verifique o ficheiro e tente novamente.',
+            'error' => 'Falha ao executar o qpdf. Verifique o ficheiro e tente novamente.',
         ];
     }
 
@@ -169,14 +167,12 @@ if (function_exists('proc_open') && $maxParallel > 1) {
             $outName = $id . '_compressed.pdf';
             $output = $rpOutDir . DIRECTORY_SEPARATOR . $outName;
 
-            $cmd = escapeshellarg($gsBin)
-                . ' -sDEVICE=pdfwrite'
-                . ' -dCompatibilityLevel=1.4'
-                . ' -dSAFER'
-                . ' -dPDFSETTINGS=' . $pdfSetting
-                . ' -dNOPAUSE -dQUIET -dBATCH'
-                . ' -sOutputFile=' . escapeshellarg($output)
+            $cmd = escapeshellarg($qpdfBin)
+                . ' --stream-data=compress'
+                . ' --object-streams=generate'
+                . ' --compression-level=' . (int) $pdfSetting
                 . ' ' . escapeshellarg($input)
+                . ' ' . escapeshellarg($output)
                 . ' 2>&1';
 
             $proc = @proc_open($cmd, [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes);
@@ -198,7 +194,7 @@ if (function_exists('proc_open') && $maxParallel > 1) {
         // Verificar processos concluídos
         foreach ($processes as $id => $proc_data) {
             $status = proc_get_status($proc_data['proc']);
-            
+
             if (!$status['running']) {
                 // Processo concluído
                 fclose($proc_data['pipes'][1]);
@@ -208,7 +204,7 @@ if (function_exists('proc_open') && $maxParallel > 1) {
 
                 if ($exitCode === 0 && is_file($proc_data['output']) && filesize($proc_data['output']) > 0) {
                     @chmod($proc_data['output'], 0640);
-                    
+
                     $meta = $_SESSION['files'][$id];
                     $origSize = (int) ($meta['original_size'] ?? filesize($proc_data['input']) ?: 0);
                     $newSize = (int) filesize($proc_data['output']);
@@ -232,7 +228,7 @@ if (function_exists('proc_open') && $maxParallel > 1) {
                         'ok' => false,
                         'id' => $id,
                         'name' => (string) ($meta['original_name'] ?? ''),
-                        'error' => 'Falha ao executar o Ghostscript. Verifique o ficheiro e tente novamente.',
+                        'error' => 'Falha ao executar o qpdf. Verifique o ficheiro e tente novamente.',
                     ];
                 }
 
@@ -243,7 +239,7 @@ if (function_exists('proc_open') && $maxParallel > 1) {
                 fclose($proc_data['pipes'][1]);
                 fclose($proc_data['pipes'][2]);
                 proc_close($proc_data['proc']);
-                
+
                 unlinkUploadPathIfExists(is_file($proc_data['output']) ? $proc_data['output'] : null, ['uploads' => ['compressed' => $rpOutDir]]);
                 $meta = $_SESSION['files'][$id];
                 $results[] = [
@@ -265,7 +261,7 @@ if (function_exists('proc_open') && $maxParallel > 1) {
 } else {
     // Processamento sequencial (fallback)
     foreach ($ids as $id) {
-        $results[] = compressFile($gsBin, $pdfSetting, $id, $rpOutDir, $rpTempDir);
+        $results[] = compressFile($qpdfBin, $pdfSetting, $id, $rpOutDir, $rpTempDir);
     }
 }
 
