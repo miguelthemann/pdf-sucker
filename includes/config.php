@@ -18,8 +18,8 @@ return [
     /** Tamanho máximo por ficheiro (bytes) — ex.: 50 MB */
     'max_file_bytes' => 50 * 1024 * 1024,
 
-    /** Total máximo por pedido de upload (bytes) */
-    'max_batch_bytes' => 5 * 1024 * 1024 * 1024,
+    /** Total máximo por pedido de upload (bytes) — 50 MB * 1000 ficheiros = 50 GB */
+    'max_batch_bytes' => 50 * 1024 * 1024 * 1000,
 
     /** Máximo de ficheiros num único upload */
     'max_files_per_upload' => 1000,
